@@ -1,0 +1,10 @@
+node_modules/
+.expo/
+android/
+dist/
+*.apk
+*.tar.gz
+*.keystore
+*.jks
+.env*
+android/local.properties

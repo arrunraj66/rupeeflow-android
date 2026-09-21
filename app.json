@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "RupeeFlow",
+    "slug": "rupeeflow",
+    "version": "2.2.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "jsEngine": "hermes",
+    "newArchEnabled": false,
+    "scheme": "rupeeflow",
+    "android": {
+      "package": "com.rupeeflow.mobile",
+      "versionCode": 5,
+      "permissions": ["READ_SMS", "RECEIVE_SMS"],
+      "blockedPermissions": ["READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE", "SYSTEM_ALERT_WINDOW", "RECORD_AUDIO"]
+    },
+    "plugins": ["expo-asset", "./plugins/withFinance.cjs"]
+  }
+}

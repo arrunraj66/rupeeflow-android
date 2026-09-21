@@ -1,0 +1,33 @@
+{
+  "name": "rupeeflow",
+  "version": "2.2.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "prebuild": "expo prebuild --platform android --no-install",
+    "apk": "cd android && ./gradlew assembleRelease",
+    "typecheck": "tsc --noEmit",
+    "test": "node tests/run.cjs",
+    "ios": "expo run:ios"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "15.1.1",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "expo": "54.0.37",
+    "expo-asset": "12.0.13",
+    "expo-document-picker": "14.0.8",
+    "expo-file-system": "19.0.24",
+    "expo-font": "14.0.12",
+    "expo-status-bar": "3.0.9",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-safe-area-context": "5.6.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.10",
+    "babel-preset-expo": "54.0.12",
+    "typescript": "~5.9.2"
+  }
+}
