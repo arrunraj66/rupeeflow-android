@@ -5,7 +5,7 @@ const { tmpdir } = require('node:os');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const out = mkdtempSync(path.join(tmpdir(), 'rupeeflow-tests-'));
-execFileSync(process.execPath, [require.resolve('typescript/bin/tsc'), '--module', 'commonjs', '--target', 'ES2020', '--skipLibCheck', '--strict', '--outDir', out, 'src/model.ts', 'src/parser.ts', 'src/ledger.ts']);
+execFileSync(process.execPath, [require.resolve('typescript/bin/tsc'), '--module', 'commonjs', '--target', 'ES2020', '--skipLibCheck', '--strict', '--outDir', out, 'modules/money/src/model.ts', 'modules/money/src/parser.ts', 'modules/money/src/ledger.ts']);
 const { parseMessage } = require(path.join(out, 'parser.js'));
 const { currentBalance, ingest } = require(path.join(out, 'ledger.js'));
 const { emptyLedger } = require(path.join(out, 'model.js'));

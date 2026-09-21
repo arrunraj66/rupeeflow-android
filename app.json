@@ -1,19 +1,73 @@
 {
   "expo": {
-    "name": "RupeeFlow",
-    "slug": "rupeeflow",
-    "version": "2.2.0",
-    "orientation": "portrait",
+    "name": "Arun One",
+    "slug": "arun-one",
+    "version": "1.0.0",
+    "orientation": "default",
     "userInterfaceStyle": "dark",
     "jsEngine": "hermes",
     "newArchEnabled": false,
-    "scheme": "rupeeflow",
+    "scheme": "arunone",
     "android": {
-      "package": "com.rupeeflow.mobile",
-      "versionCode": 5,
-      "permissions": ["READ_SMS", "RECEIVE_SMS"],
-      "blockedPermissions": ["READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE", "SYSTEM_ALERT_WINDOW", "RECORD_AUDIO"]
+      "package": "com.arun.one",
+      "versionCode": 1,
+      "permissions": [
+        "INTERNET",
+        "READ_SMS",
+        "RECEIVE_SMS",
+        "POST_NOTIFICATIONS",
+        "SCHEDULE_EXACT_ALARM",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "READ_MEDIA_AUDIO",
+        "READ_MEDIA_VIDEO",
+        "READ_EXTERNAL_STORAGE",
+        "RECORD_AUDIO",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ],
+      "blockedPermissions": [
+        "SYSTEM_ALERT_WINDOW",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      "allowBackup": false
     },
-    "plugins": ["expo-asset", "./plugins/withFinance.cjs"]
+    "ios": {
+      "bundleIdentifier": "com.arun.one",
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "audio"
+        ]
+      }
+    },
+    "plugins": [
+      "expo-asset",
+      "./plugins/withFinance.cjs",
+      [
+        "expo-audio",
+        {
+          "enableBackgroundPlayback": true
+        }
+      ],
+      [
+        "expo-video",
+        {
+          "supportsBackgroundPlayback": true,
+          "supportsPictureInPicture": true
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "granularPermissions": [
+            "audio",
+            "video"
+          ],
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
+      "expo-notifications"
+    ]
   }
 }

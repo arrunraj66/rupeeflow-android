@@ -1,6 +1,6 @@
 {
-  "name": "rupeeflow",
-  "version": "2.2.0",
+  "name": "arun-one",
+  "version": "1.0.0",
   "private": true,
   "main": "index.ts",
   "scripts": {
@@ -9,8 +9,9 @@
     "prebuild": "expo prebuild --platform android --no-install",
     "apk": "cd android && ./gradlew assembleRelease",
     "typecheck": "tsc --noEmit",
-    "test": "node tests/run.cjs",
-    "ios": "expo run:ios"
+    "test": "node tests/finance.cjs && node --test tests/*.test.mjs",
+    "ios": "expo run:ios",
+    "postinstall": "node scripts/patch-audio.cjs"
   },
   "dependencies": {
     "@expo/vector-icons": "15.1.1",
@@ -23,11 +24,26 @@
     "expo-status-bar": "3.0.9",
     "react": "19.1.0",
     "react-native": "0.81.5",
-    "react-native-safe-area-context": "5.6.0"
+    "react-native-safe-area-context": "5.6.0",
+    "expo-audio": "1.1.1",
+    "expo-video": "3.0.16",
+    "expo-media-library": "18.2.1",
+    "expo-notifications": "~0.32.12",
+    "expo-av": "~16.0.7",
+    "expo-linking": "~8.0.8"
   },
   "devDependencies": {
     "@types/react": "~19.1.10",
     "babel-preset-expo": "54.0.12",
     "typescript": "~5.9.2"
+  },
+  "expo": {
+    "autolinking": {
+      "android": {
+        "buildFromSource": [
+          "expo-audio"
+        ]
+      }
+    }
   }
 }

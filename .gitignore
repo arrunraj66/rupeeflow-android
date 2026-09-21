@@ -1,10 +1,8 @@
 node_modules/
-.expo/
 android/
+ios/
+.expo/
 dist/
 *.apk
-*.tar.gz
 *.keystore
-*.jks
 .env*
-android/local.properties

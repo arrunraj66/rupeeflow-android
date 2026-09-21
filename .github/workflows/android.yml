@@ -1,0 +1,50 @@
+name: Arun One Android APK
+on:
+  push:
+    branches: [codex/arun-one]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install dependencies and preserve audio extension
+        run: npm install --no-audit --no-fund
+      - name: Typecheck and regression tests
+        run: |
+          npm run typecheck
+          npm test
+      - name: Generate native Android project
+        run: npm run prebuild
+      - name: Build universal personal-testing APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon --max-workers=2 -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64,x86
+      - name: Verify APK signature and package
+        run: |
+          mkdir -p delivery
+          cp android/app/build/outputs/apk/release/app-release.apk delivery/Arun-One-1.0.0.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose delivery/Arun-One-1.0.0.apk
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging delivery/Arun-One-1.0.0.apk > delivery/apk-info.txt
+          sha256sum delivery/Arun-One-1.0.0.apk > delivery/SHA256SUMS.txt
+          cp package-lock.json delivery/package-lock.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Arun-One-APK
+          path: delivery/
+          if-no-files-found: error
+          retention-days: 30
