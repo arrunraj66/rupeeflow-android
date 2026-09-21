@@ -1,0 +1,44 @@
+name: Arun One install and navigation check
+on:
+  push:
+    branches: [codex/arun-one-smoke]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for the exact APK build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run watch 35598493739 --exit-status --interval 20
+      - uses: actions/download-artifact@v4
+        with:
+          name: Arun-One-APK
+          path: delivery
+          run-id: 35598493739
+          github-token: ${{ github.token }}
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - name: Enable emulator acceleration
+        run: sudo chmod 666 /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: python3 qa/smoke.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Arun-One-Screenshots
+          path: screenshots/
+          if-no-files-found: warn
