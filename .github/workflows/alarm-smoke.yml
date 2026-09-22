@@ -1,0 +1,39 @@
+name: Arun One wake-up alarm check
+on:
+  push:
+    branches: [codex/arun-one-alarm-smoke]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  alarm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Arun-One-APK
+          path: delivery
+          run-id: 35689288991
+          github-token: ${{ github.token }}
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - run: sudo chmod 666 /dev/kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: python3 qa/alarm-smoke.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Arun-One-Alarm-Screenshots
+          path: alarm-screenshots/
+          if-no-files-found: warn
