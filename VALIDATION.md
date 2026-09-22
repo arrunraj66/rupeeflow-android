@@ -1,8 +1,8 @@
 # Arun One 1.1.0 validation
 
-Built application source: commit `31116d34589d2f09ba525e1adb6624134cede270` on `codex/arun-one`.
-APK build: https://github.com/arrunraj66/rupeeflow-android/actions/runs/35598493739
-Emulator check: https://github.com/arrunraj66/rupeeflow-android/actions/runs/35598928398
+Built application source: commit `9941f79265351eda7189a15dc0c51c574bcca4ea` on `codex/arun-one`.
+APK build: https://github.com/arrunraj66/rupeeflow-android/actions/runs/35689288991
+Wake-up alarm emulator check: https://github.com/arrunraj66/rupeeflow-android/actions/runs/35690612332
 
 Passed:
 - Complete TypeScript check with installed dependencies.
@@ -11,12 +11,13 @@ Passed:
 - APK signature verification and downloaded artifact SHA-256 verification.
 - Android 15/API 35 emulator installation, startup, Plan → Media → Money → Inbox navigation and return to Plan. No AndroidRuntime/ReactNativeJS errors were logged in this check.
 - Visual inspection of Plan, Media and Money emulator screenshots.
+- Android 15 exact alarm scheduling, locked-screen wake, full-screen ringing activity, visible Stop/Snooze controls, Stop dismissal and crash-log check.
 
-APK package: `com.arun.one`, version 1.0.0, version code 1, minimum Android API 24 (Android 7.0), target API 36.
+APK package: `com.arun.one`, version 1.1.0, version code 2, minimum Android API 24 (Android 7.0), target API 36.
 The APK uses a personal-testing signing certificate. It is not a Play Store production release.
 The package-lock.json is copied from the successful APK build to retain exact dependency resolution.
 
-Version 1.1.0 adds an Android AlarmManager wake-up implementation with a foreground ringing service, looping alarm sound, vibration, screen wake, full-screen Stop/Snooze activity, boot rescheduling and an in-app five-second test. Build/run evidence will be updated after the 1.1.0 workflow completes.
+Version 1.1.0 adds an Android AlarmManager wake-up implementation with a foreground ringing service, looping alarm sound, vibration, screen wake, full-screen Stop/Snooze activity, boot rescheduling and an in-app five-second test.
 
 Still requires real-phone verification: iQOO background/autostart behavior, overnight alarm timing with OEM power management, real SMS and payment notifications, Bluetooth/headset controls, DSP availability and video PiP. Emulator checks do not prove full feature parity on every device.
 
