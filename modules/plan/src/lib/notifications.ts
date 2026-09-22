@@ -1,6 +1,17 @@
-import { Platform } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { Alarm, Task } from '../types';
+
+type WakeAlarmStatus = { exact: boolean; notifications: boolean; fullScreen: boolean };
+type WakeAlarmNative = {
+  schedule(id: string, label: string, hour: number, minute: number, days: number[]): Promise<number>;
+  cancel(id: string): Promise<void>;
+  status(): Promise<WakeAlarmStatus>;
+  openSettings(kind: 'exact' | 'fullScreen'): Promise<void>;
+  test(): Promise<void>;
+};
+
+const wakeAlarm = NativeModules.WakeAlarm as WakeAlarmNative | undefined;
 
 export async function configureNotifications() {
   Notifications.setNotificationHandler({
@@ -47,6 +58,11 @@ export async function scheduleTaskReminder(task: Task) {
 }
 
 export async function scheduleAlarm(alarm: Alarm) {
+  if (Platform.OS === 'android') {
+    if (!wakeAlarm) throw new Error('Wake-up alarm service is unavailable in this build.');
+    await wakeAlarm.schedule(alarm.id, alarm.label || 'Wake-up alarm', alarm.hour, alarm.minute, alarm.days);
+    return [alarm.id];
+  }
   const identifiers: string[] = [];
   if (alarm.days.length === 0) {
     const date = new Date();
@@ -93,4 +109,22 @@ function alarmContent(alarm: Alarm) {
 
 export async function cancelNotifications(ids: string[]) {
   await Promise.all(ids.map((id) => Notifications.cancelScheduledNotificationAsync(id)));
+}
+
+export async function cancelWakeAlarm(id: string) {
+  if (Platform.OS === 'android' && wakeAlarm) await wakeAlarm.cancel(id);
+}
+
+export async function getWakeAlarmStatus(): Promise<WakeAlarmStatus> {
+  if (Platform.OS !== 'android' || !wakeAlarm) return { exact: true, notifications: true, fullScreen: true };
+  return wakeAlarm.status();
+}
+
+export async function openWakeAlarmSettings(kind: 'exact' | 'fullScreen') {
+  if (Platform.OS === 'android' && wakeAlarm) await wakeAlarm.openSettings(kind);
+}
+
+export async function testWakeAlarm() {
+  if (Platform.OS !== 'android' || !wakeAlarm) throw new Error('Alarm testing is available on Android.');
+  await wakeAlarm.test();
 }

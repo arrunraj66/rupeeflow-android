@@ -1,4 +1,4 @@
-# Arun One 1.0.0 validation
+# Arun One 1.1.0 validation
 
 Built application source: commit `31116d34589d2f09ba525e1adb6624134cede270` on `codex/arun-one`.
 APK build: https://github.com/arrunraj66/rupeeflow-android/actions/runs/35598493739
@@ -16,6 +16,8 @@ APK package: `com.arun.one`, version 1.0.0, version code 1, minimum Android API 
 The APK uses a personal-testing signing certificate. It is not a Play Store production release.
 The package-lock.json is copied from the successful APK build to retain exact dependency resolution.
 
-Still requires real-phone verification: iQOO background/autostart behavior, alarm timing with OEM power management, real SMS and payment notifications, Bluetooth/headset controls, DSP availability and video PiP. Emulator startup checks do not prove full feature parity on every device.
+Version 1.1.0 adds an Android AlarmManager wake-up implementation with a foreground ringing service, looping alarm sound, vibration, screen wake, full-screen Stop/Snooze activity, boot rescheduling and an in-app five-second test. Build/run evidence will be updated after the 1.1.0 workflow completes.
+
+Still requires real-phone verification: iQOO background/autostart behavior, overnight alarm timing with OEM power management, real SMS and payment notifications, Bluetooth/headset controls, DSP availability and video PiP. Emulator checks do not prove full feature parity on every device.
 
 Private data does not transfer automatically between the old app IDs and this new app. RupeeFlow JSON backup restore is provided; the originals do not expose an equivalent export for Dayflow tasks or Pulse private preferences.

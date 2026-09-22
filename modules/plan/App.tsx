@@ -24,6 +24,7 @@ import { Alarm, Priority, Task, Track } from './src/types';
 import { formatDay, formatTime, pad } from './src/lib/date';
 import { addTaskToGoogleCalendar, integrations, openIntegration, shareTask } from './src/lib/integrations';
 import { useMusicPlayer } from './src/hooks/useMusicPlayer';
+import { openWakeAlarmSettings, testWakeAlarm } from './src/lib/notifications';
 
 type Tab = 'Today' | 'Tasks' | 'Alarms' | 'Music' | 'Connect';
 const tabs: { name: Tab; icon: keyof typeof Ionicons.glyphMap; active: keyof typeof Ionicons.glyphMap }[] = [
@@ -178,13 +179,30 @@ function TasksScreen({ onAdd }: { onAdd(): void }) {
 
 function AlarmsScreen({ onAdd }: { onAdd(): void }) {
   const { alarms, toggleAlarm, removeAlarm } = useDayflow();
+  const testAlarm = async () => {
+    try {
+      await testWakeAlarm();
+      Alert.alert('Test alarm set', 'Lock your phone now. Arun One will ring in 5 seconds.');
+    } catch (error) {
+      Alert.alert('Alarm needs access', error instanceof Error ? error.message : 'Open alarm access and try again.');
+    }
+  };
+  const toggle = async (id: string) => {
+    try { await toggleAlarm(id); }
+    catch (error) { Alert.alert('Could not change alarm', error instanceof Error ? error.message : 'Check alarm access and try again.'); }
+  };
   return (
     <Page>
       <ScreenTitle eyebrow="Wake up on purpose" title="Alarms" action={<IconButton icon="add" dark onPress={onAdd} />} />
       <View style={styles.alarmIntro}>
-        <Ionicons name="notifications" size={23} color={colors.green} />
-        <Text style={styles.alarmIntroText}>Alarms use high-priority notifications, even when Dayflow is closed.</Text>
+        <Ionicons name="alarm" size={23} color={colors.green} />
+        <Text style={styles.alarmIntroText}>Rings like a regular alarm: wakes the screen, loops sound and vibration, and stays active until you Stop or Snooze.</Text>
       </View>
+      {Platform.OS === 'android' && <View style={styles.alarmActions}>
+        <Pressable accessibilityRole="button" onPress={() => void testAlarm()} style={styles.alarmAction}><Ionicons name="flask-outline" size={17} color={colors.ink} /><Text style={styles.alarmActionText}>Test in 5 sec</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={() => void openWakeAlarmSettings('exact')} style={styles.alarmAction}><Ionicons name="settings-outline" size={17} color={colors.ink} /><Text style={styles.alarmActionText}>Alarm access</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={() => void openWakeAlarmSettings('fullScreen')} style={styles.alarmAction}><Ionicons name="phone-portrait-outline" size={17} color={colors.ink} /><Text style={styles.alarmActionText}>Full screen</Text></Pressable>
+      </View>}
       {alarms.length ? alarms.map((alarm) => (
         <Pressable key={alarm.id} onLongPress={() => Alert.alert('Delete alarm?', alarm.label, [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: () => void removeAlarm(alarm.id) }])}>
           <Card style={[styles.alarmCard, !alarm.enabled && styles.alarmDisabled]}>
@@ -193,7 +211,7 @@ function AlarmsScreen({ onAdd }: { onAdd(): void }) {
               <Text style={styles.alarmLabel}>{alarm.label}</Text>
               <Text style={styles.alarmDays}>{formatAlarmDays(alarm)}</Text>
             </View>
-            <Switch value={alarm.enabled} onValueChange={() => void toggleAlarm(alarm.id)} trackColor={{ false: '#DADCD7', true: colors.greenSoft }} thumbColor={alarm.enabled ? colors.green : '#FFFFFF'} />
+            <Switch value={alarm.enabled} onValueChange={() => void toggle(alarm.id)} trackColor={{ false: '#DADCD7', true: colors.greenSoft }} thumbColor={alarm.enabled ? colors.green : '#FFFFFF'} />
           </Card>
         </Pressable>
       )) : <EmptyState icon="alarm-outline" title="No alarms yet" body="Set one-time or repeating alarms for the moments that matter." />}
@@ -354,8 +372,12 @@ function AlarmModal({ visible, onClose }: { visible: boolean; onClose(): void })
     if (!match) return Alert.alert('Check the time', 'Use time format HH:MM.');
     const hour = Number(match[1]); const minute = Number(match[2]);
     if (hour > 23 || minute > 59) return Alert.alert('Check the time', 'Use a valid 24-hour time.');
-    await addAlarm({ label: label.trim() || 'Dayflow alarm', hour, minute, days: [...days].sort() });
-    onClose();
+    try {
+      await addAlarm({ label: label.trim() || 'Wake-up alarm', hour, minute, days: [...days].sort() });
+      onClose();
+    } catch (error) {
+      Alert.alert('Alarm needs access', error instanceof Error ? error.message : 'Allow Alarms & reminders, then try again.');
+    }
   };
   const toggleDay = (day: number) => setDays((current) => current.includes(day) ? current.filter((item) => item !== day) : [...current, day]);
   return (
@@ -432,6 +454,9 @@ const styles = StyleSheet.create({
   priorityDot: { width: 8, height: 8, borderRadius: 4 }, hint: { color: colors.muted, textAlign: 'center', fontSize: 11, marginTop: 10 },
   alarmIntro: { flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: colors.greenSoft, borderRadius: 18, padding: 15, marginBottom: 18 },
   alarmIntroText: { flex: 1, color: colors.green, fontSize: 12, lineHeight: 18, fontWeight: '600' },
+  alarmActions: { flexDirection: 'row', gap: 7, marginTop: -7, marginBottom: 18 },
+  alarmAction: { flex: 1, minHeight: 48, backgroundColor: colors.paper, borderRadius: 14, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center', gap: 3, paddingHorizontal: 4 },
+  alarmActionText: { color: colors.ink, fontSize: 9, fontWeight: '800', textAlign: 'center' },
   alarmCard: { flexDirection: 'row', alignItems: 'center', marginBottom: 13, paddingVertical: 20 }, alarmDisabled: { opacity: .5 },
   alarmTime: { color: colors.ink, fontSize: 36, fontWeight: '500', letterSpacing: -1.5 }, alarmLabel: { color: colors.ink, fontSize: 14, fontWeight: '800', marginTop: 3 }, alarmDays: { color: colors.muted, fontSize: 11, marginTop: 4 },
   playerCard: { alignItems: 'center', backgroundColor: '#162A49', borderRadius: 30, padding: 24, overflow: 'hidden', marginBottom: 28, ...shadow },

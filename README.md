@@ -8,7 +8,7 @@ The signed personal-testing APK has passed an Android 15 emulator install/naviga
 
 | Space | Included implementations |
 | --- | --- |
-| Plan | Today/progress/timeline, priority tasks, notes, completion/deletion, task sharing/calendar handoff, scheduled reminders, one-time and weekday alarms, imported music and seeking, service links |
+| Plan | Today/progress/timeline, priority tasks, notes, completion/deletion, task sharing/calendar handoff, scheduled reminders, one-time and weekday full-screen wake-up alarms with looping sound/vibration and Stop/Snooze, imported music and seeking, service links |
 | Media | Local music/video scanning, search/folders, favourites, hidden folders, smart groups, play counts, cached library, continuous random/shuffle, queue, seek, background audio, lock-screen/headset controls, direct URLs, video/PiP, embedded captions, themes, five-zone native EQ, bass/clarity/spatial/loudness/speed controls and real playback metering |
 | Money | Historical SMS import, background SMS/payment notification capture, native SQLite inbox, conservative parser, integer-paise amounts, duplicate review, bank and verified balances, calendar, budgets, manual entries, analytics, corrections, profile, background opacity, private snapshots and JSON export/restore |
 
@@ -39,8 +39,8 @@ Target: Android 7.0+ (React Native 0.81 / Expo 54), including iQOO Neo 10. Unive
 1. Download the built APK, open it on Android, and permit your browser/file manager to install this package if asked.
 2. Export a JSON backup from the old RupeeFlow Profile screen, then restore it in Money → Profile. Re-grant SMS and notification access in Money → Inbox. This is a separate installation and does not overwrite the old apps.
 3. Re-enter existing Dayflow tasks/alarms. The original does not expose a task export. Media rescans shared phone files; private Pulse favourites, play counts and settings do not transfer automatically.
-4. Allow notifications and Alarms & reminders. For iQOO, check background activity/autostart restrictions if reminders or capture stop.
-5. Test a reminder, then lock/unlock the phone while playing music. Switch among Plan/Media/Money and confirm playback remains active. Starting a different internal music player pauses the previous player.
+4. Allow notifications and **Alarms & reminders**. In Plan → Alarms, open **Full screen** and allow Arun One to show full-screen alarms. On iQOO, also enable Autostart and unrestricted/background battery use for Arun One.
+5. In Plan → Alarms, tap **Test in 5 sec**, lock the phone, and confirm the alarm wakes the screen, rings continuously, vibrates, and exposes Stop/Snooze. Then test a reminder and lock/unlock the phone while playing music. Switch among Plan/Media/Money and confirm playback remains active.
 
 Native finance classes retain their Java package but manifest receivers/services use fully qualified names to work under the new application ID. Android automatic backup remains disabled for financial privacy. RECORD_AUDIO is requested by the existing playback meter; no microphone recording feature is added.
 

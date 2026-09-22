@@ -1,7 +1,7 @@
 import React, { createContext, PropsWithChildren, useContext, useEffect, useMemo, useState } from 'react';
 import { Alarm, AppState, Priority, Task, Track } from '../types';
 import { emptyState, loadState, saveState } from '../lib/storage';
-import { cancelNotifications, configureNotifications, scheduleAlarm, scheduleTaskReminder } from '../lib/notifications';
+import { cancelNotifications, cancelWakeAlarm, configureNotifications, scheduleAlarm, scheduleTaskReminder } from '../lib/notifications';
 import { makeId } from '../lib/date';
 
 type AddTaskInput = Pick<Task, 'title' | 'notes' | 'dueAt' | 'priority'>;
@@ -60,23 +60,27 @@ export function DayflowProvider({ children }: PropsWithChildren) {
     },
     async addAlarm(input) {
       const alarm: Alarm = { ...input, id: makeId(), enabled: true, notificationIds: [] };
-      alarm.notificationIds = await scheduleAlarm(alarm).catch(() => []);
+      alarm.notificationIds = await scheduleAlarm(alarm);
       setState((current) => ({ ...current, alarms: [...current.alarms, alarm] }));
     },
     async toggleAlarm(id) {
       const alarm = state.alarms.find((item) => item.id === id);
       if (!alarm) return;
       if (alarm.enabled) {
+        await cancelWakeAlarm(alarm.id).catch(console.warn);
         await cancelNotifications(alarm.notificationIds).catch(console.warn);
         setState((current) => ({ ...current, alarms: current.alarms.map((item) => item.id === id ? { ...item, enabled: false, notificationIds: [] } : item) }));
       } else {
-        const notificationIds = await scheduleAlarm(alarm).catch(() => []);
+        const notificationIds = await scheduleAlarm(alarm);
         setState((current) => ({ ...current, alarms: current.alarms.map((item) => item.id === id ? { ...item, enabled: true, notificationIds } : item) }));
       }
     },
     async removeAlarm(id) {
       const alarm = state.alarms.find((item) => item.id === id);
-      if (alarm) await cancelNotifications(alarm.notificationIds).catch(console.warn);
+      if (alarm) {
+        await cancelWakeAlarm(alarm.id).catch(console.warn);
+        await cancelNotifications(alarm.notificationIds).catch(console.warn);
+      }
       setState((current) => ({ ...current, alarms: current.alarms.filter((item) => item.id !== id) }));
     },
     addTrack(track) {
