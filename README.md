@@ -2,7 +2,7 @@
 
 Combined Android project: Dayflow + Pulse Player 1.6.1 + RupeeFlow 2.2.0.
 One app ID (`com.arun.one`), one window-inset owner and one navigation shell.
-Source integration is complete; APK/device verification status is tracked in VALIDATION.md.
+The signed personal-testing APK has passed an Android 15 emulator install/navigation check. See VALIDATION.md for test scope.
 
 ## Preserved features
 
@@ -16,10 +16,10 @@ Original module READMEs remain under `modules/` as provenance; their standalone 
 
 ## Android build
 
-Requires Node 22, JDK 17 and Android SDK 36. The first dependency install generates a lockfile; preserve the lockfile from the successful build artifact for reproducibility.
+Requires Node 22, JDK 17 and Android SDK 36. The lockfile is retained from the successful APK build. Use npm ci for the same dependency versions.
 
 ```bash
-npm install
+npm ci
 npm run typecheck
 npm test
 npm run prebuild
