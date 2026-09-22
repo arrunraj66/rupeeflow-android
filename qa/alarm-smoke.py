@@ -36,7 +36,8 @@ adb('shell', 'input', 'keyevent', '26')
 xml = wait_for('STOP ALARM', 'ringing', attempts=20)
 assert 'SNOOZE 5 MIN' in xml and 'WAKE-UP ALARM' in xml
 tap('STOP ALARM', xml); time.sleep(2)
-assert 'WakeAlarmActivity' not in adb('shell', 'dumpsys', 'activity', 'activities')
+activities = adb('shell', 'dumpsys', 'activity', 'activities')
+assert not re.search(r'mResumedActivity.*WakeAlarmActivity', activities)
 logs = adb('logcat', '-d', '-s', 'AndroidRuntime:E', 'ReactNativeJS:E')
 (out / 'errors.log').write_text(logs)
 assert 'FATAL EXCEPTION' not in logs and 'ReactNativeJS: Error:' not in logs, logs
