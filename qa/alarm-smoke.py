@@ -5,8 +5,10 @@ def adb(*args, check=True):
     return subprocess.run(['adb', *args], check=check, capture_output=True, text=True).stdout
 def dump(name):
     adb('shell', 'uiautomator', 'dump', '/sdcard/ui.xml', check=False)
-    xml = adb('shell', 'cat', '/sdcard/ui.xml'); (out / f'{name}.xml').write_text(xml)
-    (out / f'{name}.png').write_bytes(subprocess.check_output(['adb', 'exec-out', 'screencap', '-p']))
+    xml = adb('shell', 'cat', '/sdcard/ui.xml', check=False)
+    if xml:
+        (out / f'{name}.xml').write_text(xml)
+        (out / f'{name}.png').write_bytes(subprocess.check_output(['adb', 'exec-out', 'screencap', '-p']))
     return xml
 def wait_for(text, name, attempts=15):
     for _ in range(attempts):
