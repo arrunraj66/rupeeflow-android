@@ -24,7 +24,10 @@ def tap(label, xml):
 # Reproduce the user's path: v2.0 is already installed, then hotfix is installed over it.
 adb('install','-r','old/Arun-One-2.0.0-Preview.apk')
 adb('shell','am','start','-W','-n','com.arun.one/.MainActivity')
-wait_for('ARUN ONE 2.0 PREVIEW','before-upgrade')
+# 2.0 may return to the launcher on affected upgrade paths; install the hotfix
+# over that exact package without clearing its sandbox.
+time.sleep(5); dump('before-upgrade')
+adb('shell','am','force-stop','com.arun.one')
 adb('install','-r','new/Arun-One-2.0.1-Hotfix.apk')
 package=adb('shell','dumpsys','package','com.arun.one')
 assert 'versionCode=4' in package and 'versionName=2.0.1' in package
