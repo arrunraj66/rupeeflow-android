@@ -14,6 +14,11 @@ def wait_for(text, name, attempts=20):
     for _ in range(attempts):
         time.sleep(1); xml=dump(name)
         if text in xml: return xml
+        if "Pixel Launcher isn't responding" in xml and 'text="Close app"' in xml:
+            nodes=[n for n in ET.fromstring(xml).iter('node') if n.get('text')=='Close app']
+            if nodes:
+                x1,y1,x2,y2=map(int,re.findall(r'\d+',nodes[-1].get('bounds')))
+                adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2),check=False)
     raw=adb('logcat','-d','-t','5000',check=False)
     keys=('com.arun.one','AndroidRuntime','ReactNative','FATAL','SoLoader','ActivityTaskManager','Expo','libc')
     logs='\n'.join(line for line in raw.splitlines() if any(key in line for key in keys))
