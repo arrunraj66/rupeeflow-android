@@ -5,6 +5,7 @@ import android.content.*
 import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
 import android.graphics.drawable.Icon
+import android.hardware.biometrics.BiometricPrompt
 import android.net.Uri
 import android.os.*
 import android.provider.Settings
@@ -49,7 +50,7 @@ class OneCoreModule(private val context: ReactApplicationContext) : ReactContext
   }
 
   @ReactMethod fun authenticate(reason: String, promise: Promise) {
-    val activity = currentActivity ?: return promise.reject("AUTH", "Open Arun One and try again.")
+    val activity = context.currentActivity ?: return promise.reject("AUTH", "Open Arun One and try again.")
     val keyguard = context.getSystemService(KeyguardManager::class.java)
     if (!keyguard.isDeviceSecure) return promise.reject("AUTH", "Set a phone PIN, pattern, fingerprint or face lock first.")
     if (Build.VERSION.SDK_INT >= 30) {
@@ -106,10 +107,10 @@ class OneCoreModule(private val context: ReactApplicationContext) : ReactContext
     } catch(e:Exception){promise.reject("SHORTCUTS","Could not publish shortcuts.",e)}
   }
 
-  override fun onActivityResult(activity: Activity?, requestCode: Int, resultCode: Int, data: Intent?) {
+  override fun onActivityResult(activity: Activity, requestCode: Int, resultCode: Int, data: Intent?) {
     if(requestCode==AUTH_REQUEST){authPromise?.resolve(resultCode==Activity.RESULT_OK);authPromise=null}
   }
-  override fun onNewIntent(intent: Intent?) = Unit
+  override fun onNewIntent(intent: Intent) = Unit
 }
 
 class OneCorePackage : ReactPackage {
