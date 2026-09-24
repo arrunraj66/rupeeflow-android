@@ -20,6 +20,7 @@ jobs:
       - name: Publish prerelease
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: arrunraj66/rupeeflow-android
         run: |
           if gh release view v2.0.0-preview >/dev/null 2>&1; then
             gh release upload v2.0.0-preview delivery/Arun-One-2.0.0-Preview.apk --clobber
