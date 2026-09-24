@@ -15,6 +15,8 @@ test('2.0.1 hotfix exposes five connected spaces', () => {
   assert.match(shell, /useState<Space\[\]>\(\['Home'\]\)/);
   assert.match(shell, /RootErrorBoundary/);
   assert.match(storage, /Array\.isArray\(saved\?\.tasks\)/);
+  assert.equal(hub.includes('/>} {settings.features'), false);
+  assert.equal(hub.includes('</Pressable>} {ok&&'), false);
 });
 
 test('Feature Lab makes every preview area reversible', () => {
