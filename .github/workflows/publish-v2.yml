@@ -1,0 +1,28 @@
+name: Publish Arun One 2.0 Preview
+on:
+  push:
+    branches: [codex/arun-one-alarm-smoke]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Arun-One-APK
+          path: delivery
+          run-id: 35962112441
+          github-token: ${{ github.token }}
+      - name: Verify exact tested APK
+        run: echo "79caa6f0bdf7b7854f5647c854872c3cb65ec213d2f3309a65b3259eb7f6764c  delivery/Arun-One-2.0.0-Preview.apk" | sha256sum -c -
+      - name: Publish prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view v2.0.0-preview >/dev/null 2>&1; then
+            gh release upload v2.0.0-preview delivery/Arun-One-2.0.0-Preview.apk --clobber
+          else
+            gh release create v2.0.0-preview delivery/Arun-One-2.0.0-Preview.apk --target 2036c3a174dd914c090e73196d5f762a16463dc8 --title "Arun One 2.0 Preview" --prerelease --notes "Unified Home, Plan, Media, Money and More. Includes Feature Lab controls, offline assistant, professional wake-up alarm, permission centre, privacy lock, encrypted backup, automation routines, Smart Money insights, widget and shortcuts. Signed universal Android APK; tested on Android 15."
+          fi
