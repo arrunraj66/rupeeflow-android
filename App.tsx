@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { Component, ErrorInfo, PropsWithChildren, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, initialWindowMetrics } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -17,11 +17,18 @@ const spaces: {name:Space; icon:keyof typeof Ionicons.glyphMap; detail:string}[]
   {name:'More',icon:'options-outline',detail:'Tools & privacy'},
 ];
 export default function App(){
-  return <OneProvider><LockGate><MainShell/></LockGate></OneProvider>;
+  return <RootErrorBoundary><OneProvider><LockGate><MainShell/></LockGate></OneProvider></RootErrorBoundary>;
+}
+class RootErrorBoundary extends Component<PropsWithChildren,{failed:boolean;message:string}> {
+  state={failed:false,message:''};
+  static getDerivedStateFromError(error:Error){return {failed:true,message:error.message||'Unexpected startup error'};}
+  componentDidCatch(error:Error,info:ErrorInfo){console.error('Arun One recovered from a UI error',error,info.componentStack);}
+  render(){if(this.state.failed)return <View style={s.recovery}><Ionicons name="shield-checkmark-outline" size={56} color="#65DEEB"/><Text style={s.recoveryTitle}>Arun One protected your data</Text><Text style={s.recoveryCopy}>A screen could not open safely. Your Plan, Media and Money data has not been deleted.</Text><Pressable style={s.done} onPress={()=>this.setState({failed:false,message:''})}><Text style={s.doneText}>Try opening again</Text></Pressable><Text selectable style={s.recoveryCode}>{this.state.message}</Text></View>;return this.props.children;}
 }
 function MainShell(){
   const [space,setSpace]=useState<Space>('Home');
-  const [opened,setOpened]=useState<Space[]>(['Home','Plan','Money','More']);
+  // Keep native capture and OEM permission probes out of the critical startup path.
+  const [opened,setOpened]=useState<Space[]>(['Home']);
   const [help,setHelp]=useState(false);
   const select=(name:Space)=>{setOpened(old=>old.includes(name)?old:[...old,name]);setSpace(name);};
   return <SafeAreaProvider initialMetrics={initialWindowMetrics}><StatusBar style="light" />
@@ -33,7 +40,7 @@ function MainShell(){
           <Pressable accessibilityRole="button" accessibilityLabel="Setup and data transfer help" onPress={()=>setHelp(true)} style={s.help}><Ionicons name="information-circle-outline" size={24} color="#B9AAFF" /></Pressable>
         </View>
         <View style={s.content}>
-          {/* Keep mounted: switching spaces must not stop music or discard forms. */}
+          {/* Spaces mount on first use, then stay mounted so playback/forms persist. */}
           {spaces.map(({name})=>opened.includes(name)&&<View key={name} style={[s.space,space!==name&&s.hidden]} accessibilityElementsHidden={space!==name} importantForAccessibility={space===name?'auto':'no-hide-descendants'}>
             {name==='Home'?<HomeScreen select={select}/>:name==='Plan'?<Plan/>:name==='Media'?<Media/>:name==='Money'?<Money/>:<MoreScreen/>}
           </View>)}
@@ -58,5 +65,5 @@ function MainShell(){
   </SafeAreaProvider>;
 }
 const s=StyleSheet.create({
-  safe:{flex:1,backgroundColor:'#080E1D'},frame:{flex:1,width:'100%',maxWidth:1000,alignSelf:'center'},header:{flexDirection:'row',alignItems:'center',paddingHorizontal:20,paddingVertical:12,gap:12,borderBottomWidth:1,borderBottomColor:'#22324B'},mark:{width:42,height:42,borderRadius:14,backgroundColor:'#152C40',borderWidth:1,borderColor:'#30566C',alignItems:'center',justifyContent:'center'},brand:{color:'#EDF3FF',fontSize:19,fontWeight:'800',letterSpacing:2.4},tag:{color:'#899CB9',fontSize:9,letterSpacing:2,marginTop:4},help:{width:44,height:44,alignItems:'center',justifyContent:'center'},content:{flex:1},space:{flex:1},hidden:{display:'none'},nav:{flexDirection:'row',padding:8,gap:8,borderTopWidth:1,borderTopColor:'#22324B',backgroundColor:'#0B1325'},navItem:{flex:1,alignItems:'center',justifyContent:'center',minHeight:73,paddingVertical:8,borderRadius:18,borderWidth:1,borderColor:'transparent',gap:3},navActive:{backgroundColor:'#172C43',borderColor:'#345B75'},navTitle:{color:'#A5B3CB',fontSize:13,fontWeight:'800'},navDetail:{color:'#899CB9',fontSize:9},helpPage:{padding:24,paddingBottom:40},helpTitle:{fontSize:30,color:'#EDF3FF',fontWeight:'800',marginBottom:18},helpHeading:{fontSize:18,color:'#65DEEB',fontWeight:'700',marginTop:24,marginBottom:8},copy:{fontSize:15,lineHeight:24,color:'#B8C7DE'},done:{backgroundColor:'#65DEEB',padding:17,borderRadius:16,marginTop:30,alignItems:'center'},doneText:{fontSize:16,fontWeight:'800',color:'#080E1D'}
+  safe:{flex:1,backgroundColor:'#080E1D'},frame:{flex:1,width:'100%',maxWidth:1000,alignSelf:'center'},header:{flexDirection:'row',alignItems:'center',paddingHorizontal:20,paddingVertical:12,gap:12,borderBottomWidth:1,borderBottomColor:'#22324B'},mark:{width:42,height:42,borderRadius:14,backgroundColor:'#152C40',borderWidth:1,borderColor:'#30566C',alignItems:'center',justifyContent:'center'},brand:{color:'#EDF3FF',fontSize:19,fontWeight:'800',letterSpacing:2.4},tag:{color:'#899CB9',fontSize:9,letterSpacing:2,marginTop:4},help:{width:44,height:44,alignItems:'center',justifyContent:'center'},content:{flex:1},space:{flex:1},hidden:{display:'none'},nav:{flexDirection:'row',padding:8,gap:8,borderTopWidth:1,borderTopColor:'#22324B',backgroundColor:'#0B1325'},navItem:{flex:1,alignItems:'center',justifyContent:'center',minHeight:73,paddingVertical:8,borderRadius:18,borderWidth:1,borderColor:'transparent',gap:3},navActive:{backgroundColor:'#172C43',borderColor:'#345B75'},navTitle:{color:'#A5B3CB',fontSize:13,fontWeight:'800'},navDetail:{color:'#899CB9',fontSize:9},helpPage:{padding:24,paddingBottom:40},helpTitle:{fontSize:30,color:'#EDF3FF',fontWeight:'800',marginBottom:18},helpHeading:{fontSize:18,color:'#65DEEB',fontWeight:'700',marginTop:24,marginBottom:8},copy:{fontSize:15,lineHeight:24,color:'#B8C7DE'},done:{backgroundColor:'#65DEEB',padding:17,borderRadius:16,marginTop:30,alignItems:'center'},doneText:{fontSize:16,fontWeight:'800',color:'#080E1D'},recovery:{flex:1,backgroundColor:'#080E1D',alignItems:'center',justifyContent:'center',padding:30},recoveryTitle:{color:'#EDF3FF',fontSize:24,fontWeight:'900',marginTop:20,textAlign:'center'},recoveryCopy:{color:'#A5B3CB',fontSize:14,lineHeight:22,textAlign:'center',marginTop:10},recoveryCode:{color:'#64748D',fontSize:10,marginTop:20,textAlign:'center'}
 });

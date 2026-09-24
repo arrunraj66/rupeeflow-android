@@ -36,10 +36,14 @@ export async function loadSnapshot(): Promise<OneSnapshot> {
   const pairs = await AsyncStorage.multiGet([PLAN_KEY, MEDIA_KEY]);
   const planRaw = pairs[0]?.[1]; const mediaRaw = pairs[1]?.[1];
   let plan = emptyState; let tracks: MediaTrack[] = []; let ledger: Ledger | undefined;
-  try { if (planRaw) plan = { ...emptyState, ...JSON.parse(planRaw) }; } catch {}
-  try { if (mediaRaw) tracks = JSON.parse(mediaRaw).tracks || []; } catch {}
+  try { if (planRaw) { const saved=JSON.parse(planRaw); plan={tasks:Array.isArray(saved?.tasks)?saved.tasks:[],alarms:Array.isArray(saved?.alarms)?saved.alarms:[],tracks:Array.isArray(saved?.tracks)?saved.tracks:[]}; } } catch {}
+  try { if (mediaRaw) { const saved=JSON.parse(mediaRaw); tracks=Array.isArray(saved?.tracks)?saved.tracks:[]; } } catch {}
   try { if ((await FS.getInfoAsync(ledgerPath)).exists) ledger = JSON.parse(await FS.readAsStringAsync(ledgerPath)); } catch {}
-  return { tasks: plan.tasks || [], alarms: plan.alarms || [], tracks, ledger };
+  return {
+    tasks: plan.tasks.filter(x=>x&&typeof x.id==='string'&&typeof x.title==='string'&&Number.isFinite(+new Date(x.dueAt))),
+    alarms: plan.alarms.filter(x=>x&&typeof x.id==='string'&&Number.isFinite(x.hour)&&Number.isFinite(x.minute)),
+    tracks: tracks.filter(x=>x&&typeof x.id==='string'&&typeof x.title==='string'), ledger
+  };
 }
 
 export function searchSnapshot(snapshot: OneSnapshot, query: string): SearchResult[] {
@@ -54,7 +58,7 @@ export function searchSnapshot(snapshot: OneSnapshot, query: string): SearchResu
 }
 
 export function moneyInsights(snapshot: OneSnapshot): MoneyInsight {
-  const entries = (snapshot.ledger?.entries || []).filter(e => !e.excluded);
+  const entries = (Array.isArray(snapshot.ledger?.entries)?snapshot.ledger!.entries:[]).filter(e => e&&Number.isFinite(e.paise)&&Number.isFinite(e.at)&&!e.excluded);
   const now = new Date(); const month = entries.filter(e => { const d=new Date(e.at); return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear(); });
   const groups = new Map<string,{count:number,total:number}>();
   for (const e of entries.filter(e=>e.kind==='debit')) { const key=e.merchant||e.category; const old=groups.get(key)||{count:0,total:0}; groups.set(key,{count:old.count+1,total:old.total+e.paise}); }

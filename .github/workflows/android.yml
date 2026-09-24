@@ -40,10 +40,10 @@ jobs:
       - name: Verify APK signature and package
         run: |
           mkdir -p delivery
-          cp android/app/build/outputs/apk/release/app-release.apk delivery/Arun-One-2.0.0-Preview.apk
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose delivery/Arun-One-2.0.0-Preview.apk
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging delivery/Arun-One-2.0.0-Preview.apk > delivery/apk-info.txt
-          sha256sum delivery/Arun-One-2.0.0-Preview.apk > delivery/SHA256SUMS.txt
+          cp android/app/build/outputs/apk/release/app-release.apk delivery/Arun-One-2.0.1-Hotfix.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose delivery/Arun-One-2.0.1-Hotfix.apk
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging delivery/Arun-One-2.0.1-Hotfix.apk > delivery/apk-info.txt
+          sha256sum delivery/Arun-One-2.0.1-Hotfix.apk > delivery/SHA256SUMS.txt
           cp package-lock.json delivery/package-lock.json
       - uses: actions/upload-artifact@v4
         with:

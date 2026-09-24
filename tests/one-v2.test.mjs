@@ -9,9 +9,12 @@ const hub = await read('../one/OneHub.tsx');
 const storage = await read('../one/storage.ts');
 const core = await read('../native/core/OneCoreModule.kt');
 
-test('2.0 preview exposes five connected spaces', () => {
-  assert.equal(app.version, '2.0.0'); assert.equal(app.android.versionCode, 3);
+test('2.0.1 hotfix exposes five connected spaces', () => {
+  assert.equal(app.version, '2.0.1'); assert.equal(app.android.versionCode, 4);
   for (const space of ['Home','Plan','Media','Money','More']) assert.match(shell, new RegExp(`name:'${space}'`));
+  assert.match(shell, /useState<Space\[\]>\(\['Home'\]\)/);
+  assert.match(shell, /RootErrorBoundary/);
+  assert.match(storage, /Array\.isArray\(saved\?\.tasks\)/);
 });
 
 test('Feature Lab makes every preview area reversible', () => {

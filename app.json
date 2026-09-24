@@ -2,7 +2,7 @@
   "expo": {
     "name": "Arun One",
     "slug": "arun-one",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "orientation": "default",
     "userInterfaceStyle": "dark",
     "jsEngine": "hermes",
@@ -10,7 +10,7 @@
     "scheme": "arunone",
     "android": {
       "package": "com.arun.one",
-      "versionCode": 3,
+      "versionCode": 4,
       "permissions": [
         "INTERNET",
         "READ_SMS",
