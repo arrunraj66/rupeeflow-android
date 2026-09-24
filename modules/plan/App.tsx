@@ -1,7 +1,8 @@
 import { SectionTabs } from '../../shared/SectionTabs';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  DeviceEventEmitter,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -13,6 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
@@ -24,7 +26,7 @@ import { Alarm, Priority, Task, Track } from './src/types';
 import { formatDay, formatTime, pad } from './src/lib/date';
 import { addTaskToGoogleCalendar, integrations, openIntegration, shareTask } from './src/lib/integrations';
 import { useMusicPlayer } from './src/hooks/useMusicPlayer';
-import { openWakeAlarmSettings, testWakeAlarm } from './src/lib/notifications';
+import { AlarmHistoryItem, AlarmPreferences, clearAlarmHistory, getAlarmHistory, getAlarmPreferences, openWakeAlarmSettings, setAlarmPreferences, skipNextAlarm, testWakeAlarm } from './src/lib/notifications';
 
 type Tab = 'Today' | 'Tasks' | 'Alarms' | 'Music' | 'Connect';
 const tabs: { name: Tab; icon: keyof typeof Ionicons.glyphMap; active: keyof typeof Ionicons.glyphMap }[] = [
@@ -179,6 +181,10 @@ function TasksScreen({ onAdd }: { onAdd(): void }) {
 
 function AlarmsScreen({ onAdd }: { onAdd(): void }) {
   const { alarms, toggleAlarm, removeAlarm } = useDayflow();
+  const [alarmPro, setAlarmPro] = useState(true);
+  const [proOpen, setProOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  useEffect(()=>{const read=()=>void AsyncStorage.getItem('@arun-one/settings/v2').then(raw=>setAlarmPro(raw?JSON.parse(raw).features?.alarmPro!==false:true)).catch(()=>undefined);read();const sub=DeviceEventEmitter.addListener('one:settings-changed',value=>setAlarmPro(value?.features?.alarmPro!==false));return()=>sub.remove();},[]);
   const testAlarm = async () => {
     try {
       await testWakeAlarm();
@@ -198,10 +204,14 @@ function AlarmsScreen({ onAdd }: { onAdd(): void }) {
         <Ionicons name="alarm" size={23} color={colors.green} />
         <Text style={styles.alarmIntroText}>Rings like a regular alarm: wakes the screen, loops sound and vibration, and stays active until you Stop or Snooze.</Text>
       </View>
-      {Platform.OS === 'android' && <View style={styles.alarmActions}>
+      {Platform.OS === 'android' && alarmPro && <View style={styles.alarmActions}>
         <Pressable accessibilityRole="button" onPress={() => void testAlarm()} style={styles.alarmAction}><Ionicons name="flask-outline" size={17} color={colors.ink} /><Text style={styles.alarmActionText}>Test in 5 sec</Text></Pressable>
         <Pressable accessibilityRole="button" onPress={() => void openWakeAlarmSettings('exact')} style={styles.alarmAction}><Ionicons name="settings-outline" size={17} color={colors.ink} /><Text style={styles.alarmActionText}>Alarm access</Text></Pressable>
         <Pressable accessibilityRole="button" onPress={() => void openWakeAlarmSettings('fullScreen')} style={styles.alarmAction}><Ionicons name="phone-portrait-outline" size={17} color={colors.ink} /><Text style={styles.alarmActionText}>Full screen</Text></Pressable>
+      </View>}
+      {Platform.OS === 'android' && <View style={styles.alarmActions}>
+        <Pressable accessibilityRole="button" onPress={() => setProOpen(true)} style={styles.alarmAction}><Ionicons name="options-outline" size={17} color={colors.ink} /><Text style={styles.alarmActionText}>Alarm style</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={() => setHistoryOpen(true)} style={styles.alarmAction}><Ionicons name="time-outline" size={17} color={colors.ink} /><Text style={styles.alarmActionText}>History</Text></Pressable>
       </View>}
       {alarms.length ? alarms.map((alarm) => (
         <Pressable key={alarm.id} onLongPress={() => Alert.alert('Delete alarm?', alarm.label, [{ text: 'Cancel' }, { text: 'Delete', style: 'destructive', onPress: () => void removeAlarm(alarm.id) }])}>
@@ -211,13 +221,25 @@ function AlarmsScreen({ onAdd }: { onAdd(): void }) {
               <Text style={styles.alarmLabel}>{alarm.label}</Text>
               <Text style={styles.alarmDays}>{formatAlarmDays(alarm)}</Text>
             </View>
-            <Switch value={alarm.enabled} onValueChange={() => void toggle(alarm.id)} trackColor={{ false: '#DADCD7', true: colors.greenSoft }} thumbColor={alarm.enabled ? colors.green : '#FFFFFF'} />
+            <View style={{alignItems:'flex-end',gap:9}}><Switch value={alarm.enabled} onValueChange={() => void toggle(alarm.id)} trackColor={{ false: '#DADCD7', true: colors.greenSoft }} thumbColor={alarm.enabled ? colors.green : '#FFFFFF'} />{alarmPro&&alarm.enabled&&alarm.days.length>0&&<Pressable onPress={()=>void skipNextAlarm(alarm.id).then(at=>Alert.alert('Next alarm skipped',`The following occurrence is ${new Date(at).toLocaleString()}.`)).catch(e=>Alert.alert('Could not skip',String(e)))}><Text style={styles.skipText}>Skip next</Text></Pressable>}</View>
           </Card>
         </Pressable>
       )) : <EmptyState icon="alarm-outline" title="No alarms yet" body="Set one-time or repeating alarms for the moments that matter." />}
       {alarms.length > 0 && <Text style={styles.hint}>Tip: hold an alarm to delete it</Text>}
+      {alarmPro&&<><AlarmProModal visible={proOpen} close={()=>setProOpen(false)}/><AlarmHistoryModal visible={historyOpen} close={()=>setHistoryOpen(false)}/></>}
     </Page>
   );
+}
+
+function AlarmProModal({visible,close}:{visible:boolean;close():void}){
+  const [prefs,setPrefs]=useState<AlarmPreferences>({gradual:true,vibrate:true,voice:false,maxMinutes:20});
+  useEffect(()=>{if(visible)void getAlarmPreferences().then(setPrefs);},[visible]);
+  const setting=(label:string,detail:string,key:'gradual'|'vibrate'|'voice')=><View style={styles.proSetting}><View style={{flex:1}}><Text style={styles.proLabel}>{label}</Text><Text style={styles.proDetail}>{detail}</Text></View><Switch value={prefs[key]} onValueChange={value=>setPrefs({...prefs,[key]:value})}/></View>;
+  return <Sheet visible={visible} onClose={close} title="Alarm style" subtitle="Professional wake-up controls.">{setting('Gradual volume','Rises from 12% to full volume over 32 seconds','gradual')}{setting('Vibration','Repeating wake-up vibration pattern','vibrate')}{setting('Speak alarm label','Reads the alarm name when ringing','voice')}<Field label="Maximum ringing time"><View style={styles.optionRow}>{[10,20,30,60].map(value=><Option key={value} label={`${value} min`} active={prefs.maxMinutes===value} onPress={()=>setPrefs({...prefs,maxMinutes:value})}/>)}</View></Field><PrimaryButton label="Save alarm style" icon="checkmark" onPress={()=>void setAlarmPreferences(prefs).then(close).catch(e=>Alert.alert('Could not save',String(e)))}/></Sheet>;
+}
+function AlarmHistoryModal({visible,close}:{visible:boolean;close():void}){
+  const [items,setItems]=useState<AlarmHistoryItem[]>([]);useEffect(()=>{if(visible)void getAlarmHistory().then(setItems);},[visible]);
+  return <Sheet visible={visible} onClose={close} title="Alarm history" subtitle="Rings, stops and snoozes stay on this phone.">{items.length?items.slice(0,20).map((item,index)=><View key={`${item.at}-${index}`} style={styles.historyRow}><View style={{flex:1}}><Text style={styles.proLabel}>{item.label}</Text><Text style={styles.proDetail}>{new Date(item.at).toLocaleString()}</Text></View><Text style={styles.historyEvent}>{item.event}</Text></View>):<Text style={styles.historyEmpty}>No alarm activity recorded yet.</Text>} {!!items.length&&<Pressable onPress={()=>void clearAlarmHistory().then(()=>setItems([]))}><Text style={styles.clearHistory}>Clear history</Text></Pressable>}</Sheet>;
 }
 
 function formatAlarmDays(alarm: Alarm) {
@@ -457,6 +479,10 @@ const styles = StyleSheet.create({
   alarmActions: { flexDirection: 'row', gap: 7, marginTop: -7, marginBottom: 18 },
   alarmAction: { flex: 1, minHeight: 48, backgroundColor: colors.paper, borderRadius: 14, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center', gap: 3, paddingHorizontal: 4 },
   alarmActionText: { color: colors.ink, fontSize: 9, fontWeight: '800', textAlign: 'center' },
+  skipText: { color: colors.green, fontSize: 10, fontWeight: '900' },
+  proSetting: { minHeight: 65, flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: 1, borderBottomColor: colors.line },
+  proLabel: { color: colors.ink, fontSize: 13, fontWeight: '800' }, proDetail: { color: colors.muted, fontSize: 10, marginTop: 3 },
+  historyRow: { minHeight: 59, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.line }, historyEvent: { color: colors.green, fontSize: 10, fontWeight: '900' }, historyEmpty: { color: colors.muted, textAlign: 'center', paddingVertical: 35 }, clearHistory: { color: colors.orange, textAlign: 'center', fontWeight: '900', padding: 16 },
   alarmCard: { flexDirection: 'row', alignItems: 'center', marginBottom: 13, paddingVertical: 20 }, alarmDisabled: { opacity: .5 },
   alarmTime: { color: colors.ink, fontSize: 36, fontWeight: '500', letterSpacing: -1.5 }, alarmLabel: { color: colors.ink, fontSize: 14, fontWeight: '800', marginTop: 3 }, alarmDays: { color: colors.muted, fontSize: 11, marginTop: 4 },
   playerCard: { alignItems: 'center', backgroundColor: '#162A49', borderRadius: 30, padding: 24, overflow: 'hidden', marginBottom: 28, ...shadow },

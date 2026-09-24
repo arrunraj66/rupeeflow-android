@@ -56,6 +56,21 @@ class WakeAlarmModule(private val context: ReactApplicationContext) : ReactConte
       promise.resolve(null)
     } catch (e: Exception) { promise.reject("ALARM_TEST", "Could not start alarm test.", e) }
   }
+
+  @ReactMethod fun skipNext(id: String, promise: Promise) {
+    try { promise.resolve(WakeAlarmScheduler.skipNext(context,id).toDouble()) }
+    catch(e:Exception){promise.reject("ALARM_SKIP","Could not skip the next alarm.",e)}
+  }
+
+  @ReactMethod fun setPreferences(values: ReadableMap, promise: Promise) {
+    try { context.getSharedPreferences("wake_alarm_preferences",0).edit()
+      .putBoolean("gradual",values.getBoolean("gradual")).putBoolean("vibrate",values.getBoolean("vibrate"))
+      .putBoolean("voice",values.getBoolean("voice")).putInt("maxMinutes",values.getInt("maxMinutes")).apply(); promise.resolve(null) }
+    catch(e:Exception){promise.reject("ALARM_PREFS","Could not save alarm preferences.",e)}
+  }
+  @ReactMethod fun getPreferences(promise: Promise) { val p=context.getSharedPreferences("wake_alarm_preferences",0);promise.resolve(Arguments.createMap().apply{putBoolean("gradual",p.getBoolean("gradual",true));putBoolean("vibrate",p.getBoolean("vibrate",true));putBoolean("voice",p.getBoolean("voice",false));putInt("maxMinutes",p.getInt("maxMinutes",20))}) }
+  @ReactMethod fun history(promise: Promise) { val source=WakeAlarmHistory.read(context);val out=Arguments.createArray();for(i in 0 until source.length()){val item=source.getJSONObject(i);out.pushMap(Arguments.createMap().apply{putString("id",item.optString("id"));putString("label",item.optString("label"));putString("event",item.optString("event"));putDouble("at",item.optDouble("at"))})};promise.resolve(out) }
+  @ReactMethod fun clearHistory(promise: Promise) { WakeAlarmHistory.clear(context);promise.resolve(null) }
 }
 
 class WakeAlarmPackage : ReactPackage {

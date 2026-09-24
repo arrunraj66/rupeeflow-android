@@ -9,7 +9,14 @@ type WakeAlarmNative = {
   status(): Promise<WakeAlarmStatus>;
   openSettings(kind: 'exact' | 'fullScreen'): Promise<void>;
   test(): Promise<void>;
+  skipNext(id: string): Promise<number>;
+  setPreferences(values: AlarmPreferences): Promise<void>;
+  getPreferences(): Promise<AlarmPreferences>;
+  history(): Promise<AlarmHistoryItem[]>;
+  clearHistory(): Promise<void>;
 };
+export type AlarmPreferences = { gradual: boolean; vibrate: boolean; voice: boolean; maxMinutes: number };
+export type AlarmHistoryItem = { id: string; label: string; event: string; at: number };
 
 const wakeAlarm = NativeModules.WakeAlarm as WakeAlarmNative | undefined;
 
@@ -128,3 +135,9 @@ export async function testWakeAlarm() {
   if (Platform.OS !== 'android' || !wakeAlarm) throw new Error('Alarm testing is available on Android.');
   await wakeAlarm.test();
 }
+
+export const getAlarmPreferences = async (): Promise<AlarmPreferences> => wakeAlarm ? wakeAlarm.getPreferences() : ({ gradual:true,vibrate:true,voice:false,maxMinutes:20 });
+export const setAlarmPreferences = async (values: AlarmPreferences) => { if (wakeAlarm) await wakeAlarm.setPreferences(values); };
+export const getAlarmHistory = async (): Promise<AlarmHistoryItem[]> => wakeAlarm ? wakeAlarm.history() : [];
+export const clearAlarmHistory = async () => { if (wakeAlarm) await wakeAlarm.clearHistory(); };
+export const skipNextAlarm = async (id: string) => { if (!wakeAlarm) throw new Error('Wake-up alarm service is unavailable.'); return wakeAlarm.skipNext(id); };

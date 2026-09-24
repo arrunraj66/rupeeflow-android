@@ -1,4 +1,5 @@
 import React, { createContext, PropsWithChildren, useContext, useEffect, useMemo, useState } from 'react';
+import { DeviceEventEmitter } from 'react-native';
 import { Alarm, AppState, Priority, Task, Track } from '../types';
 import { emptyState, loadState, saveState } from '../lib/storage';
 import { cancelNotifications, cancelWakeAlarm, configureNotifications, scheduleAlarm, scheduleTaskReminder } from '../lib/notifications';
@@ -31,6 +32,13 @@ export function DayflowProvider({ children }: PropsWithChildren) {
       await configureNotifications().catch(console.warn);
       setReady(true);
     })();
+  }, []);
+
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener('one:data-changed', () => {
+      void loadState().then(setState).catch(console.warn);
+    });
+    return () => subscription.remove();
   }, []);
 
   useEffect(() => {

@@ -4,7 +4,7 @@ import { Alert, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FS from 'expo-file-system/legacy';
 import { allowSms, native } from './capture';
-import { backup, exportBackup, validate } from './storage';
+import { backup, exportBackup, exportCsv, validate } from './storage';
 import { categories, Category, Entry, localDay, money } from './model';
 import { currentBalance, ingest } from './ledger';
 import { useLedger } from './useLedger';
@@ -142,6 +142,7 @@ export function ProfileScreen({ controller: c }: { controller: Controller }) {
       const restored = validate(JSON.parse(await FS.readAsStringAsync(pick.assets[0].uri)));
       Alert.alert('Replace this ledger?', 'A private backup of the current data will be saved before restoring. Captured phone messages may be merged again on refresh.', [{ text: 'Cancel', style: 'cancel' }, { text: 'Restore', onPress: () => run(async () => { await backup(c.state); await c.mutate(() => ({ ...restored, checkpoint: 0 })); await c.sync(); }) }]);
     })} /></Card>
+    <Card><Text style={S.h}>Professional reports</Text><Text style={S.muted}>Export every transaction as a spreadsheet-compatible CSV for accounting, filtering or archiving.</Text><Button label="Export transaction CSV" onPress={() => run(async () => { if (await exportCsv(c.state)) Alert.alert('CSV exported'); })} /></Card>
     <Card><Text style={S.h}>Android access</Text><Text style={S.muted}>On iQOO, allow background activity/autostart for RupeeFlow if alerts stop arriving. Force-stopping an app stops capture until you reopen it. SMS history can recover missed SMS; dismissed notifications cannot be recovered.</Text><Button label="Open Android app settings" onPress={() => run(async () => { if (!native) throw new Error('Install the Android APK'); await native.openAppSettings(); })} /></Card>
   </Page>;
 }

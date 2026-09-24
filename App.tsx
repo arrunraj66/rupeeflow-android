@@ -6,16 +6,22 @@ import { Ionicons } from '@expo/vector-icons';
 import Plan from './modules/plan/App';
 import Media from './modules/media/App';
 import Money from './modules/money/App';
+import { HomeScreen, LockGate, MoreScreen, OneProvider } from './one/OneHub';
 
-type Space='Plan'|'Media'|'Money';
+type Space='Home'|'Plan'|'Media'|'Money'|'More';
 const spaces: {name:Space; icon:keyof typeof Ionicons.glyphMap; detail:string}[]=[
+  {name:'Home',icon:'grid-outline',detail:'Your day'},
   {name:'Plan',icon:'planet-outline',detail:'Tasks & time'},
   {name:'Media',icon:'headset-outline',detail:'Music & video'},
   {name:'Money',icon:'wallet-outline',detail:'Finance & insights'},
+  {name:'More',icon:'options-outline',detail:'Tools & privacy'},
 ];
 export default function App(){
-  const [space,setSpace]=useState<Space>('Plan');
-  const [opened,setOpened]=useState<Space[]>(['Plan','Money']);
+  return <OneProvider><LockGate><MainShell/></LockGate></OneProvider>;
+}
+function MainShell(){
+  const [space,setSpace]=useState<Space>('Home');
+  const [opened,setOpened]=useState<Space[]>(['Home','Plan','Money','More']);
   const [help,setHelp]=useState(false);
   const select=(name:Space)=>{setOpened(old=>old.includes(name)?old:[...old,name]);setSpace(name);};
   return <SafeAreaProvider initialMetrics={initialWindowMetrics}><StatusBar style="light" />
@@ -29,7 +35,7 @@ export default function App(){
         <View style={s.content}>
           {/* Keep mounted: switching spaces must not stop music or discard forms. */}
           {spaces.map(({name})=>opened.includes(name)&&<View key={name} style={[s.space,space!==name&&s.hidden]} accessibilityElementsHidden={space!==name} importantForAccessibility={space===name?'auto':'no-hide-descendants'}>
-            {name==='Plan'?<Plan/>:name==='Media'?<Media/>:<Money/>}
+            {name==='Home'?<HomeScreen select={select}/>:name==='Plan'?<Plan/>:name==='Media'?<Media/>:name==='Money'?<Money/>:<MoreScreen/>}
           </View>)}
         </View>
         <View style={s.nav}>{spaces.map(item=><Pressable key={item.name} onPress={()=>select(item.name)} accessibilityRole="tab" accessibilityState={{selected:space===item.name}} style={[s.navItem,space===item.name&&s.navActive]}>
@@ -39,13 +45,14 @@ export default function App(){
         </Pressable>)}</View>
       </View>
       <Modal visible={help} animationType="slide" onRequestClose={()=>setHelp(false)}><SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.helpPage}>
-        <Text style={s.helpTitle}>Welcome to Arun One</Text>
-        <Text style={s.copy}>Three familiar tools, one personal space. Use the bottom bar to switch spaces and the tabs above each screen to find every feature.</Text>
+        <Text style={s.helpTitle}>Welcome to Arun One 2.0</Text>
+        <Text style={s.copy}>Plan, Media and Money now meet in one dashboard. Home gives you search, quick actions, summaries and the private offline Arun Assistant. More contains permissions, privacy, backups, automation and Feature Lab.</Text>
         <Text style={s.helpHeading}>Bring your finances</Text><Text style={s.copy}>In your existing RupeeFlow app, export a JSON backup from Profile. Open Money → Profile here and restore that backup. Your original app stays separate. Re-enable SMS and notification access in Money → Inbox.</Text>
         <Text style={s.helpHeading}>Tasks and media</Text><Text style={s.copy}>Android keeps each app’s private data separate. Re-enter existing Dayflow tasks and alarms; there is no automatic import from its old installation. Open Media to rescan your phone’s music and videos. Pulse favourites, listening history and sound preferences start fresh.</Text>
-        <Text style={s.helpHeading}>Permissions on your phone</Text><Text style={s.copy}>Allow notifications and Alarms & reminders for scheduled reminders. For reliable delivery on iQOO, check the app’s background activity and autostart settings. SMS, payment notifications and media access remain separate choices.</Text>
+        <Text style={s.helpHeading}>Permissions on your phone</Text><Text style={s.copy}>Open More → Permission & reliability. It checks notifications, exact alarms, full-screen alarms, phone security and battery access, with direct Fix buttons. For reliable delivery on iQOO, also enable Arun One Autostart.</Text>
+        <Text style={s.helpHeading}>Try or remove preview features</Text><Text style={s.copy}>Open More → Feature Lab. Every 2.0 area has its own switch. Turning a feature off hides it without deleting your existing data.</Text>
         <Text style={s.helpHeading}>Sound and privacy</Text><Text style={s.copy}>Music continues when you switch spaces. Starting an imported track in Plan pauses Media, and starting Media pauses Plan. Bluetooth routing, equalizer effects and Picture in Picture depend on your Android device. Financial records stay on your phone unless you export them.</Text>
-        <Pressable style={s.done} onPress={()=>setHelp(false)} accessibilityRole="button"><Text style={s.doneText}>Explore your space</Text></Pressable>
+        <Pressable style={s.done} onPress={()=>setHelp(false)} accessibilityRole="button"><Text style={s.doneText}>Explore Arun One 2.0</Text></Pressable>
       </ScrollView></SafeAreaView></Modal>
     </SafeAreaView>
   </SafeAreaProvider>;

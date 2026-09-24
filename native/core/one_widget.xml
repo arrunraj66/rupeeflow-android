@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="16dp" android:background="#142038">
+  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="ARUN ONE" android:textColor="#65DEEB" android:textStyle="bold" android:textSize="12sp" android:letterSpacing="0.16"/>
+  <TextView android:id="@+id/widget_task" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:text="Open Arun One" android:textColor="#EDF3FF" android:textStyle="bold" android:textSize="16sp" android:maxLines="1"/>
+  <TextView android:id="@+id/widget_alarm" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="No alarm" android:textColor="#B8C7DE" android:textSize="12sp" android:maxLines="1"/>
+  <TextView android:id="@+id/widget_balance" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Balance unavailable" android:textColor="#B9AAFF" android:textSize="12sp" android:maxLines="1"/>
+</LinearLayout>

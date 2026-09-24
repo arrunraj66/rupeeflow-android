@@ -12,6 +12,7 @@ class WakeAlarmReceiver : BroadcastReceiver() {
     }
     val id = intent.getStringExtra("id") ?: "alarm"
     val label = intent.getStringExtra("label") ?: "Wake-up alarm"
+    WakeAlarmHistory.add(context,id,label,"Rang")
     if (!intent.getBooleanExtra("snooze", false)) WakeAlarmScheduler.onFired(context, id)
     val service = Intent(context, WakeAlarmService::class.java).setAction(WakeAlarmService.START).putExtra("id", id).putExtra("label", label)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(service) else context.startService(service)

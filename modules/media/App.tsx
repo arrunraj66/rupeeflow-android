@@ -3,7 +3,7 @@ import { claimPlayback, registerPlayback } from '../../shared/playback';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable,
-  ScrollView, AppState, StatusBar, StyleSheet, Switch, Text, TextInput, View,
+  ScrollView, AppState, DeviceEventEmitter, StatusBar, StyleSheet, Switch, Text, TextInput, View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,6 +34,7 @@ const HIDDEN_FOLDERS_KEY = '@pulse/hidden-folders-v1';
 const SOUND_SETTINGS_KEY = '@pulse/sound-studio-v2';
 const SUBTITLES_KEY = '@pulse/subtitles-enabled-v1';
 const SHUFFLE_KEY = '@pulse/continuous-random-v1';
+const SLEEP_TIMER_KEY = '@pulse/sleep-timer-v1';
 const SCAN_COOLDOWN_MS = 60 * 1000;
 const THEMES: AppTheme[] = [
   { name: 'Midnight', background: '#090B12', panel: '#191D2A', accent: '#A994FF', glow: '#49358C' },
@@ -62,10 +63,14 @@ export default function App() {
 }
 
 function PlayerApp() {
+  const [mediaPro, setMediaPro] = useState(true);
   const [tab, setTab] = useState<Tab>('Music');
   const [favourites, setFavourites] = useState<string[]>([]);
   const [soundOpen, setSoundOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [proOpen, setProOpen] = useState(false);
+  const [sleepUntil, setSleepUntil] = useState(0);
+  const sleepRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [themeName, setThemeName] = useState<ThemeName>('Midnight');
   const [hiddenFolders, setHiddenFolders] = useState<string[]>([]);
   const [gains, setGains] = useState([0, 0, 0, 0, 0]);
@@ -100,6 +105,8 @@ function PlayerApp() {
   const audio = useAudioPlayer(null, { updateInterval: 250 });
   const status = useAudioPlayerStatus(audio);
   useEffect(() => registerPlayback('media', () => { audio.pause(); setVideo(null); }), [audio]);
+  useEffect(()=>{const read=()=>void AsyncStorage.getItem('@arun-one/settings/v2').then(raw=>setMediaPro(raw?JSON.parse(raw).features?.mediaPro!==false:true)).catch(()=>undefined);read();const sub=DeviceEventEmitter.addListener('one:settings-changed',value=>setMediaPro(value?.features?.mediaPro!==false));return()=>sub.remove();},[]);
+  useEffect(() => () => { if (sleepRef.current) clearTimeout(sleepRef.current); }, []);
   useEffect(() => { if (status.playing) claimPlayback('media'); }, [status.playing]);
 
   useEffect(() => {
@@ -160,6 +167,12 @@ function PlayerApp() {
     setShuffle(enabled);
     void AsyncStorage.setItem(SHUFFLE_KEY, String(enabled));
   }, []);
+  const setSleepTimer = (minutes: number) => {
+    if (sleepRef.current) clearTimeout(sleepRef.current);
+    if (!minutes) { setSleepUntil(0); void AsyncStorage.removeItem(SLEEP_TIMER_KEY); return; }
+    const until = Date.now() + minutes * 60_000; setSleepUntil(until); void AsyncStorage.setItem(SLEEP_TIMER_KEY, String(until));
+    sleepRef.current = setTimeout(() => { audio.pause(); setSleepUntil(0); void AsyncStorage.removeItem(SLEEP_TIMER_KEY); }, minutes * 60_000);
+  };
   const selectTheme = (name: ThemeName) => { setThemeName(name); void AsyncStorage.setItem(THEME_KEY, name); };
   const hideFolder = (folder: string) => setHiddenFolders(previous => {
     const next = previous.includes(folder) ? previous : [...previous, folder];
@@ -304,7 +317,7 @@ function PlayerApp() {
   return <View style={[styles.safe, { backgroundColor: theme.background }]}>
     <View style={[styles.shell, { backgroundColor: theme.background }]}>
       <View pointerEvents="none" style={[styles.ambientOne, { backgroundColor: theme.glow }]} /><View pointerEvents="none" style={[styles.ambientTwo, { backgroundColor: theme.accent }]} />
-      <View style={[styles.topbar, { borderBottomColor: theme.panel }]}><View><Text style={styles.brand}>Media studio</Text><Text style={[styles.tagline, { color: theme.accent }]}>MUSIC / VIDEO / SOUND</Text></View><View style={styles.topActions}><Pressable style={[styles.roundButton, { backgroundColor: theme.panel }]} onPress={() => setSettingsOpen(true)}><Ionicons name="color-palette-outline" size={22} color={theme.accent} /></Pressable><Pressable style={[styles.roundButton, { backgroundColor: theme.panel }]} onPress={openSoundStudio}><Ionicons name="options-outline" size={22} color={C.cream} /></Pressable></View></View>
+      <View style={[styles.topbar, { borderBottomColor: theme.panel }]}><View><Text style={styles.brand}>Media studio</Text><Text style={[styles.tagline, { color: theme.accent }]}>MUSIC / VIDEO / SOUND</Text></View><View style={styles.topActions}>{mediaPro&&<Pressable style={[styles.roundButton, { backgroundColor: theme.panel }]} onPress={() => setProOpen(true)}><Ionicons name="timer-outline" size={22} color={sleepUntil ? theme.accent : C.cream} /></Pressable>}<Pressable style={[styles.roundButton, { backgroundColor: theme.panel }]} onPress={() => setSettingsOpen(true)}><Ionicons name="color-palette-outline" size={22} color={theme.accent} /></Pressable><Pressable style={[styles.roundButton, { backgroundColor: theme.panel }]} onPress={openSoundStudio}><Ionicons name="options-outline" size={22} color={C.cream} /></Pressable></View></View>
       <BottomNav tab={tab} setTab={setTab} />
       <View style={styles.body}>
         {tab === 'Home' && <HomeScreen current={current} playing={status.playing} currentTime={status.currentTime} duration={status.duration || current.duration} buffering={status.isBuffering} shuffle={shuffle} setShuffle={setShuffleMode} enhance={enhance} cleanup={cleanup} setEnhance={setEnhance} setCleanup={setCleanup} onToggle={toggle} onPrevious={() => playAdjacent(-1)} onNext={() => playAdjacent(1)} onRandom={playRandom} onSeek={(ratio) => void audio.seekTo((status.duration || current.duration || 0) * ratio)} frequent={frequent} least={least} stats={stats} onPlay={(track) => playTrack(track, audioLibrary)} />}
@@ -317,8 +330,13 @@ function PlayerApp() {
     {meterReady && soundOpen && <AudioMeterBridge player={audio} onMeter={setMeter} />}
     <SoundPanel visible={soundOpen} onClose={() => setSoundOpen(false)} gains={gains} setGains={setGains} enabled={eqEnabled} setEnabled={setEqEnabled} status={eqStatus} volume={volume} setVolume={setVolume} bassBoost={bassBoost} setBassBoost={setBassBoost} clarity={clarity} setClarity={setClarity} spatial={spatial} setSpatial={setSpatial} loudness={loudness} setLoudness={setLoudness} hearingProtect={hearingProtect} setHearingProtect={setHearingProtect} playbackRate={playbackRate} setPlaybackRate={setPlaybackRate} levels={meter.levels} spectrum={meter.spectrum} meterReady={meterReady} playing={status.playing} theme={theme} />
     <ThemePanel visible={settingsOpen} onClose={() => setSettingsOpen(false)} theme={themeName} onTheme={selectTheme} hiddenFolders={hiddenFolders} onShowFolder={showFolder} />
+    {mediaPro&&<MediaProPanel visible={proOpen} close={() => setProOpen(false)} sleepUntil={sleepUntil} setSleep={setSleepTimer} />}
     <EnhancementModal visible={enhanceInfo} enhance={enhance} cleanup={cleanup} setEnhance={setEnhance} setCleanup={setCleanup} onClose={() => setEnhanceInfo(false)} />
   </View>;
+}
+
+function MediaProPanel({ visible, close, sleepUntil, setSleep }: { visible: boolean; close(): void; sleepUntil: number; setSleep(minutes: number): void }) {
+  return <Modal visible={visible} transparent animationType="slide" onRequestClose={close}><View style={styles.modalShade}><View style={styles.settingsCard}><View style={styles.settingsHeader}><View><Text style={styles.modalTitle}>Media Pro</Text><Text style={styles.modalCopy}>Sleep timer and professional playback tools.</Text></View><Pressable style={styles.roundButton} onPress={close}><Ionicons name="close" size={22} color={C.cream} /></Pressable></View><Text style={styles.settingsLabel}>SLEEP TIMER</Text><View style={styles.proChoices}>{[15,30,45,60].map(value=><Pressable key={value} onPress={()=>setSleep(value)} style={styles.proChoice}><Text style={styles.proChoiceText}>{value} min</Text></Pressable>)}</View><Pressable onPress={()=>setSleep(0)} style={styles.proOff}><Text style={styles.proChoiceText}>Turn timer off</Text></Pressable>{!!sleepUntil&&<Text style={styles.proStatus}>Playback stops at {new Date(sleepUntil).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</Text>}<View style={styles.proInfo}><Ionicons name="checkmark-circle" size={20} color={C.coral}/><Text style={styles.proInfoText}>Gapless native queue, continuous shuffle, listening history, favourites, smart groups, audiobook speed and per-device sound profiles are ready.</Text></View><Pressable style={styles.primaryButton} onPress={close}><Text style={styles.primaryText}>Done</Text></Pressable></View></View></Modal>;
 }
 
 function AudioMeterBridge({ player, onMeter }: { player: ReturnType<typeof useAudioPlayer>; onMeter(value: { levels: number[]; spectrum: number[] }): void }) {
@@ -444,4 +462,5 @@ const styles = StyleSheet.create({
   onlineHero: { height: 165, backgroundColor: C.olive, borderRadius: 29, padding: 21, justifyContent: 'flex-end', marginBottom: 14 }, onlineHeroTitle: { color: C.ink, fontSize: 25, fontWeight: '900', marginTop: 9 }, onlineHeroText: { color: '#464936', fontSize: 11, marginTop: 3 }, onlineCard: { backgroundColor: C.surface, borderRadius: 25, padding: 17 }, label: { color: C.olive, fontSize: 8, fontWeight: '900', letterSpacing: 1.4, marginTop: 8, marginBottom: 8 }, segment: { flexDirection: 'row', gap: 8 }, segmentItem: { flex: 1, height: 43, borderRadius: 14, backgroundColor: '#192940', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 }, segmentActive: { backgroundColor: C.coral }, segmentText: { color: C.cream, fontWeight: '800', fontSize: 11, textTransform: 'capitalize' }, input: { color: C.cream, backgroundColor: '#192940', borderRadius: 15, paddingHorizontal: 13, paddingVertical: 12, fontSize: 12, textAlignVertical: 'top' }, primaryButton: { minHeight: 49, borderRadius: 16, backgroundColor: C.cream, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 7, marginTop: 16 }, primaryText: { color: C.ink, fontWeight: '900', fontSize: 13 }, notice: { flexDirection: 'row', gap: 11, backgroundColor: '#25291f', borderRadius: 18, padding: 14, marginTop: 12 }, noticeText: { flex: 1, color: C.muted, fontSize: 10, lineHeight: 15 },
   mini: { minHeight: 67, marginHorizontal: 9, paddingHorizontal: 9, backgroundColor: '#142038', borderRadius: 20, flexDirection: 'row', gap: 9, alignItems: 'center', borderWidth: 1, borderColor: '#293953' }, miniArt: { width: 47, height: 47, borderRadius: 15, backgroundColor: C.coral, alignItems: 'center', justifyContent: 'center' }, miniTitle: { color: C.cream, fontSize: 12, fontWeight: '900' }, miniMeta: { color: C.olive, fontSize: 8, marginTop: 3, fontWeight: '800' }, miniButton: { width: 35, height: 40, alignItems: 'center', justifyContent: 'center' }, nav: { height: 69, flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#2d2f29', marginTop: 6 }, navItem: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2 }, navIcon: { width: 35, height: 29, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }, navIconActive: { backgroundColor: C.coral }, navText: { color: C.muted, fontSize: 8, fontWeight: '800' },
   videoScreen: { flex: 1, backgroundColor: '#080906', justifyContent: 'center' }, videoHeader: { position: 'absolute', zIndex: 2, left: 16, right: 16, top: 20, flexDirection: 'row', gap: 12, alignItems: 'center' }, videoTitle: { color: C.cream, fontWeight: '900', fontSize: 15 }, video: { width: '100%', aspectRatio: 16 / 9 }, subtitleDock: { marginTop: 17, paddingHorizontal: 18, alignItems: 'center' }, subtitleButton: { minWidth: 210, minHeight: 53, borderRadius: 18, borderWidth: 1, borderColor: '#3D433D', backgroundColor: '#20231F', paddingHorizontal: 16, flexDirection: 'row', gap: 11, alignItems: 'center', justifyContent: 'center' }, subtitleButtonActive: { backgroundColor: C.olive, borderColor: C.olive }, subtitleButtonText: { color: C.cream, fontSize: 12, fontWeight: '900' }, subtitleLanguage: { color: '#4E533E', fontSize: 8, fontWeight: '800', marginTop: 2 }, subtitleHelp: { color: C.muted, fontSize: 9, marginTop: 8, textAlign: 'center' }, modalShade: { flex: 1, backgroundColor: 'rgba(0,0,0,.72)', justifyContent: 'flex-end' }, modalCard: { backgroundColor: C.surface, borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 22, paddingBottom: 34 }, modalHandle: { alignSelf: 'center', width: 45, height: 4, borderRadius: 3, backgroundColor: '#5a5a52', marginBottom: 18 }, modalTitle: { color: C.cream, fontSize: 24, fontWeight: '900' }, modalCopy: { color: C.muted, fontSize: 11, lineHeight: 17, marginTop: 7, marginBottom: 20 }, settingsCard: { backgroundColor: '#101A30', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 22, paddingBottom: 34 }, settingsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }, settingsLabel: { color: C.olive, fontSize: 9, fontWeight: '900', letterSpacing: 1.5, marginTop: 18, marginBottom: 10 }, themeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 }, themeChoice: { width: '48%', height: 68, borderRadius: 18, borderWidth: 2, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 9 }, themeSwatch: { width: 18, height: 36, borderRadius: 9 }, themeName: { color: C.cream, fontSize: 12, fontWeight: '900', flex: 1 }, hiddenRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 9, borderBottomWidth: 1, borderBottomColor: C.line }, hiddenName: { color: C.cream, flex: 1, fontSize: 12, fontWeight: '700' }, unhide: { color: C.olive, fontWeight: '900', fontSize: 11 },
+  proChoices:{flexDirection:'row',flexWrap:'wrap',gap:8},proChoice:{width:'48%',minHeight:45,borderRadius:14,backgroundColor:'#1C2C45',alignItems:'center',justifyContent:'center'},proOff:{minHeight:44,borderRadius:14,borderWidth:1,borderColor:'#334762',alignItems:'center',justifyContent:'center',marginTop:8},proChoiceText:{color:C.cream,fontSize:11,fontWeight:'900'},proStatus:{color:C.coral,fontSize:11,fontWeight:'800',marginTop:12},proInfo:{flexDirection:'row',gap:9,backgroundColor:'#17253B',borderRadius:16,padding:13,marginTop:17},proInfoText:{color:C.muted,fontSize:10,lineHeight:16,flex:1},
 });

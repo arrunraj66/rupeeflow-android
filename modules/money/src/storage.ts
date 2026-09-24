@@ -41,3 +41,13 @@ export async function exportBackup(state: Ledger) {
   await FS.writeAsStringAsync(uri, JSON.stringify(state));
   return true;
 }
+export async function exportCsv(state: Ledger) {
+  const grant = await FS.StorageAccessFramework.requestDirectoryPermissionsAsync();
+  if (!grant.granted) return false;
+  const quote = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+  const header = ['Date','Type','Amount INR','Merchant','Category','Bank','Account','Reference','Source'];
+  const rows = state.entries.map(e => [new Date(e.at).toISOString(),e.kind,(e.paise/100).toFixed(2),e.merchant,e.category,e.bank||'',e.account||'',e.reference||'',e.source].map(quote).join(','));
+  const uri = await FS.StorageAccessFramework.createFileAsync(grant.directoryUri, `arun-one-transactions-${Date.now()}.csv`, 'text/csv');
+  await FS.writeAsStringAsync(uri, [header.map(quote).join(','),...rows].join('\n'));
+  return true;
+}

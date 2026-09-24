@@ -41,8 +41,16 @@ object WakeAlarmScheduler {
     set(context, System.currentTimeMillis() + 5 * 60_000L, pendingAt(context, "$id-snooze", label, true))
   }
 
+  fun skipNext(context: Context, id: String): Long {
+    val spec = readAll(context).optJSONObject(id)?.let(::decode) ?: throw IllegalArgumentException("Alarm not found")
+    context.getSystemService(AlarmManager::class.java).cancel(pending(context, id, "", false))
+    val skipped = next(spec, System.currentTimeMillis())
+    val at = next(spec, skipped + 1000)
+    set(context, at, pending(context, spec.id, spec.label, false)); return at
+  }
+
   private fun schedule(context: Context, spec: WakeAlarmSpec): Long {
-    val at = next(spec)
+    val at = next(spec, System.currentTimeMillis())
     set(context, at, pending(context, spec.id, spec.label, false))
     return at
   }
@@ -62,10 +70,11 @@ object WakeAlarmScheduler {
     return PendingIntent.getBroadcast(context, id.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
   }
 
-  private fun next(spec: WakeAlarmSpec): Long {
-    val now = Calendar.getInstance()
+  private fun next(spec: WakeAlarmSpec, after: Long): Long {
+    val now = Calendar.getInstance().apply { timeInMillis = after }
     for (offset in 0..7) {
       val candidate = Calendar.getInstance().apply {
+        timeInMillis = after
         add(Calendar.DAY_OF_YEAR, offset); set(Calendar.HOUR_OF_DAY, spec.hour); set(Calendar.MINUTE, spec.minute)
         set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
       }
@@ -79,4 +88,11 @@ object WakeAlarmScheduler {
   private fun decode(o: JSONObject): WakeAlarmSpec? = try { WakeAlarmSpec(o.getString("id"), o.optString("label", "Wake-up alarm"), o.getInt("hour"), o.getInt("minute"), o.optJSONArray("days") ?: JSONArray()) } catch (_: Exception) { null }
   private fun readAll(context: Context) = try { JSONObject(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("alarms", "{}") ?: "{}") } catch (_: Exception) { JSONObject() }
   private fun writeAll(context: Context, value: JSONObject) { context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("alarms", value.toString()).commit() }
+}
+
+object WakeAlarmHistory {
+  private const val PREFS="arun_one_wake_alarm_history"
+  fun add(context:Context,id:String,label:String,event:String){val prefs=context.getSharedPreferences(PREFS,Context.MODE_PRIVATE);val history=try{JSONArray(prefs.getString("items","[]"))}catch(_:Exception){JSONArray()};val next=JSONArray().put(JSONObject().put("id",id).put("label",label).put("event",event).put("at",System.currentTimeMillis()));for(i in 0 until minOf(history.length(),49))next.put(history.get(i));prefs.edit().putString("items",next.toString()).apply()}
+  fun read(context:Context)=try{JSONArray(context.getSharedPreferences(PREFS,Context.MODE_PRIVATE).getString("items","[]"))}catch(_:Exception){JSONArray()}
+  fun clear(context:Context){context.getSharedPreferences(PREFS,Context.MODE_PRIVATE).edit().clear().apply()}
 }

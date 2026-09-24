@@ -1,6 +1,6 @@
-# Arun One
+# Arun One 2.0 Preview
 
-Combined Android project: Dayflow + Pulse Player 1.6.1 + RupeeFlow 2.2.0.
+Combined Android project: Dayflow + Pulse Player 1.6.1 + RupeeFlow 2.2.0, connected by the Arun One 2.0 local-first shell.
 One app ID (`com.arun.one`), one window-inset owner and one navigation shell.
 The signed personal-testing APK has passed an Android 15 emulator install/navigation check. See VALIDATION.md for test scope.
 
@@ -11,6 +11,19 @@ The signed personal-testing APK has passed an Android 15 emulator install/naviga
 | Plan | Today/progress/timeline, priority tasks, notes, completion/deletion, task sharing/calendar handoff, scheduled reminders, one-time and weekday full-screen wake-up alarms with looping sound/vibration and Stop/Snooze, imported music and seeking, service links |
 | Media | Local music/video scanning, search/folders, favourites, hidden folders, smart groups, play counts, cached library, continuous random/shuffle, queue, seek, background audio, lock-screen/headset controls, direct URLs, video/PiP, embedded captions, themes, five-zone native EQ, bass/clarity/spatial/loudness/speed controls and real playback metering |
 | Money | Historical SMS import, background SMS/payment notification capture, native SQLite inbox, conservative parser, integer-paise amounts, duplicate review, bank and verified balances, calendar, budgets, manual entries, analytics, corrections, profile, background opacity, private snapshots and JSON export/restore |
+
+## Arun One 2.0 Preview
+
+- Unified dashboard, cross-module search and quick actions.
+- Offline Arun Assistant for alarms, tasks, plan summaries, spending summaries and media navigation.
+- Permission and reliability centre with direct repair actions for alarms, notifications and battery settings.
+- Optional device-credential/biometric lock, hidden balances and AES-GCM password-encrypted whole-app backup/restore.
+- Feature Lab switches make every 2.0 area independently removable without deleting stored data.
+- Android home widget and launcher shortcuts.
+- Automation routine controls, Smart Money recurring-merchant detection and cash-flow forecast.
+- Alarm history, skip-next, gradual volume, spoken label, vibration and maximum-duration controls.
+- Media Pro sleep timer alongside the existing native queue, listening history, favourites, smart groups and sound studio.
+- Finance CSV reporting for spreadsheet/accounting workflows.
 
 Original module READMEs remain under `modules/` as provenance; their standalone build paths and application names describe the originals. Build this project from the root.
 
