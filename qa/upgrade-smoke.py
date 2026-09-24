@@ -14,7 +14,9 @@ def wait_for(text, name, attempts=20):
     for _ in range(attempts):
         time.sleep(1); xml=dump(name)
         if text in xml: return xml
-    raise AssertionError(f'{name}: expected {text!r}')
+    logs=adb('logcat','-d','-t','1200','AndroidRuntime:E','ReactNativeJS:E','libc:F','*:S',check=False)
+    (out/f'{name}-fatal.log').write_text(logs)
+    raise AssertionError(f'{name}: expected {text!r}\n{logs[-12000:]}')
 def tap(label, xml):
     nodes=[n for n in ET.fromstring(xml).iter('node') if n.get('text')==label or label in n.get('content-desc','')]
     if not nodes: raise AssertionError('Cannot find '+label)
