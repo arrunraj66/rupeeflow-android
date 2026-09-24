@@ -14,7 +14,10 @@ def wait_for(text, name, attempts=20):
     for _ in range(attempts):
         time.sleep(1); xml=dump(name)
         if text in xml: return xml
-    logs=adb('logcat','-d','-t','1200','AndroidRuntime:E','ReactNativeJS:E','libc:F','*:S',check=False)
+    raw=adb('logcat','-d','-t','5000',check=False)
+    keys=('com.arun.one','AndroidRuntime','ReactNative','FATAL','SoLoader','ActivityTaskManager','Expo','libc')
+    logs='\n'.join(line for line in raw.splitlines() if any(key in line for key in keys))
+    logs+='\n\nACTIVITIES:\n'+adb('shell','dumpsys','activity','activities',check=False)
     (out/f'{name}-fatal.log').write_text(logs)
     raise AssertionError(f'{name}: expected {text!r}\n{logs[-12000:]}')
 def tap(label, xml):
@@ -25,7 +28,7 @@ def tap(label, xml):
 
 # Reproduce the user's path: v2.0 is already installed, then hotfix is installed over it.
 adb('install','-r','old/Arun-One-2.0.0-Preview.apk')
-adb('shell','am','start','-W','-n','com.arun.one/.MainActivity')
+print(adb('shell','am','start','-W','-n','com.arun.one/.MainActivity'))
 # 2.0 may return to the launcher on affected upgrade paths; install the hotfix
 # over that exact package without clearing its sandbox.
 time.sleep(5); dump('before-upgrade')
@@ -37,7 +40,7 @@ adb('shell','pm','grant','com.arun.one','android.permission.POST_NOTIFICATIONS',
 adb('shell','appops','set','com.arun.one','USE_FULL_SCREEN_INTENT','allow',check=False)
 adb('shell','appops','set','com.arun.one','SCHEDULE_EXACT_ALARM','allow',check=False)
 adb('logcat','-c'); adb('shell','am','force-stop','com.arun.one')
-adb('shell','am','start','-W','-n','com.arun.one/.MainActivity')
+print(adb('shell','am','start','-W','-n','com.arun.one/.MainActivity'))
 xml=wait_for('ARUN ONE 2.0 PREVIEW','after-upgrade')
 tap('More',xml); xml=wait_for('Feature Lab','more')
 tap('Plan',xml); xml=wait_for('YOUR DAY AT A GLANCE','plan')
