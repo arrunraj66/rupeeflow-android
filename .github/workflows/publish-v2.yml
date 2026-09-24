@@ -16,7 +16,7 @@ jobs:
           run-id: 35968217342
           github-token: ${{ github.token }}
       - name: Verify corrected APK
-        run: echo "c6194970904ac3ec5eb8e0f192b6d5c02a2db5cc30a898952331233018cc7e9a  delivery/Arun-One-2.0.1-Hotfix.apk" | sha256sum -c -
+        run: echo "23afbf0aa1d294312ce9b29892cbddbfec0de06e4a0058569d328c86938b4e60  delivery/Arun-One-2.0.1-Hotfix.apk" | sha256sum -c -
       - name: Publish hotfix
         env:
           GH_TOKEN: ${{ github.token }}
